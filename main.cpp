@@ -3,6 +3,18 @@
 #include <regex>
 #include <map>
 
+
+static std::string SimplifyAsm(const std::string line) {
+    static const std::regex asm_r(R"(^[ ]+[[:d:][:xdigit:]]+:\t(\w+)(\t(.*))?$)");
+    std::smatch asm_m;
+    if( std::regex_match(line, asm_m, asm_r) ) {
+        const std::string asm_cmd = asm_m[1];
+        const std::string asm_str = asm_m[2];
+        return asm_cmd;
+    } else
+        return ""; //line;
+}
+
 int main(int argc, char* argv[]) {
     if( argc != 2 ) {
         std::cerr << "Usage: listing file\n";
@@ -14,8 +26,6 @@ int main(int argc, char* argv[]) {
 
     // 1) create map with sorted functions and their position in the file
     std::regex function_r("^[[:d:][:xdigit:]]+ <([[:print:]]+)>:$");
-    //std::regex asm_r("^[:blank:]+[[:d:][:xdigit:]]+:[:blank:]([[:print:]]+)");
-    std::regex asm_r(R"(^[ ]+[[:d:][:xdigit:]]+:\t(\w+)\t(.*)$)");
     std::map<std::string, std::string> functions;
     std::string current_function;
     std::string function_lines;
@@ -30,17 +40,14 @@ int main(int argc, char* argv[]) {
             }
             current_function = m[1];
         } else if( !current_function.empty() ){
-            std::smatch asm_m;
-            if( std::regex_match(line, asm_m, asm_r) ) {
-                std::string asm_cmd = asm_m[1];
-                std::string asm_str = asm_m[2];
-                function_lines += "\t| " + asm_cmd + "\t'" + asm_str + "'\n";
-            }
+            auto simplifed = SimplifyAsm(line);
+            if( !simplifed.empty() )
+                function_lines += "\t| " + simplifed + '\n';
         }
     }
     listing_file.close();
 
-    // 2) copy all functions and hide addresses
+    // 2) dump simplified output to stdout
     auto print_fun = [&](auto it) {
       std::cout << it.first << ":\n";
       std::cout << it.second << "\n";
@@ -49,7 +56,6 @@ int main(int argc, char* argv[]) {
     for( const auto f: functions ) {
         print_fun(f);
     }
-    //print_fun(*functions.find("__vectors"));
 
     return 0;
 }
