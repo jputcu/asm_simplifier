@@ -3,12 +3,8 @@ Description
 Simplify listing files so we are able to diff with previous version without being flooded with address
 changes.
 
-Listing files were retrieved via:
+Pipe the output of `avr-objdump` into `avr_simplifier`:
 ~~~
-> avr-objdump --no-show-raw-insn --headers --section=.text --demangle --source --wide ${elf_file} > ${lss_file}
+> avr-objdump --no-show-raw-insn --headers --section=.text --demangle --source --wide ${elf_file} | asm_simplifier
 ~~~
 
-Usage:
-~~~
-> asm_simplifier ${lss_file} > ${simplified_lss}
-~~~
